@@ -5,31 +5,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 )
 
+type githubKey struct {
+	Key string `json:"key"`
+}
+
 func main() {
-	/* name	string	Required. The name of the repository.
-	// POST /user/repos
-	*/
-	// Token: 5d69a732133c3c3fceeedc4c6848f9b0fbe5b0ce
-
-	type GithubKey struct {
-		Key string `json:"key"`
+	if len(os.Args) < 2 {
+		log.Fatalln("Needs one argument, ghcreate reponame")
 	}
+	repoName := os.Args[1]
+	var credentials githubKey
+	credsFile, err := ioutil.ReadFile("./key.json")
+	json.Unmarshal(credsFile, &credentials)
 
-	var credentials GithubKey
-
-	tokenFile, err := ioutil.ReadFile("./key.json")
-	json.Unmarshal(tokenFile, &credentials)
-
-	githubApi := "https://api.github.com/"
-	githubUser := "user"
-	reposUrl := "/repos"
-	fullUrl := githubApi + githubUser + reposUrl
-	fmt.Println(fullUrl)
-	exampleBody := []byte(`{ "name": "ghcreate" }`)
-	req, err := http.NewRequest("POST", fullUrl, bytes.NewBuffer(exampleBody))
+	url := createRepoURL()
+	body := []byte("{ \"name\": \"" + repoName + "\" }")
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		panic("write better error handling")
 	}
@@ -38,7 +34,18 @@ func main() {
 
 	client := &http.Client{}
 	res, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
 	defer res.Body.Close()
 	fmt.Println("res status ", res.Status)
 
+}
+
+func createRepoURL() string {
+	githubAPI := "https://api.github.com/"
+	githubUser := "user"
+	reposURL := "/repos"
+	fullURL := githubAPI + githubUser + reposURL
+	return fullURL
 }
